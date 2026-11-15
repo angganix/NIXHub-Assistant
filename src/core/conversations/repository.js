@@ -30,6 +30,18 @@ export function createConversationRepository({ database }) {
       const rows = await database.select().from(conversations).orderBy(desc(conversations.updatedAt));
       return includeArchived ? rows : rows.filter((row) => !row.archived);
     },
+    async updateConversation(id, changes) {
+      const updated = { ...changes, updatedAt: now() };
+      delete updated.id;
+      delete updated.createdAt;
+      await database.update(conversations).set(updated).where(eq(conversations.id, id));
+      return this.getConversation(id);
+    },
+    async setConversationTitle(id, title) {
+      const normalized = title.trim().slice(0, 80) || 'New conversation';
+      await database.update(conversations).set({ title: normalized, updatedAt: now() }).where(eq(conversations.id, id));
+      return this.getConversation(id);
+    },
     async getConversation(id) {
       const [conversation] = await database.select().from(conversations).where(eq(conversations.id, id)).limit(1);
       if (!conversation) return null;

@@ -13,6 +13,9 @@ test('conversation repository persists messages in stable creation order and del
 
   expect((await repository.getConversation(conversation.id)).messages.map((message) => message.content)).toEqual(['Updated first', 'Second']);
   expect(await repository.searchConversations('Updated')).toHaveLength(1);
+  await repository.updateConversation(conversation.id, { pinned: true, archived: true });
+  expect(await repository.listConversations()).toHaveLength(0);
+  expect(await repository.listConversations({ includeArchived: true })).toHaveLength(1);
   await repository.deleteConversation(conversation.id);
   expect(await repository.getConversation(conversation.id)).toBeNull();
   expect(database.prepare('SELECT COUNT(*) AS count FROM messages').get().count).toBe(0);
