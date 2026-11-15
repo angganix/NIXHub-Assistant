@@ -29,7 +29,12 @@ export function createConversationEngine({ repository }) {
         await repository.updateMessage(assistant.id, { content: '', status: 'streaming' });
         const thread = await repository.getConversation(conversationId);
         const history = (thread?.messages || []).filter((message) => message.id !== assistant.id).map(({ role, content: text }) => ({ role, content: text }));
-        const messages = request.messages.length > 1 ? request.messages : history;
+        const messages = request.messages.length > 1
+          ? request.messages
+          : [...history.slice(0, -1), request.messages.at(-1)];
+        if (thread?.systemPrompt && !messages.some((message) => message.role === 'system')) {
+          messages.unshift({ role: 'system', content: thread.systemPrompt });
+        }
         for await (const event of adapter.streamChat({ ...request, messages }, account, controller.signal)) {
           if (event.type === 'text_delta') {
             content += event.text;

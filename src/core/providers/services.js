@@ -1,5 +1,6 @@
 export function createProviderServices({ registry }) {
   return {
+    adapterFor(account) { return registry.get(account.providerId); },
     async testConnection(account) {
       const adapter = registry.get(account.providerId);
       try {

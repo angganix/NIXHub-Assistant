@@ -6,6 +6,30 @@ import { createOpenAIAdapter } from './custom/openai';
 import { createAnthropicAdapter } from './custom/anthropic';
 import { createProviderRegistry } from './registry';
 import { createProviderServices } from './services';
+import { createProviderAccountService } from './accounts';
+import Database from 'better-sqlite3';
+import { initializeDatabase } from '../storage/database';
+
+test('provider account saves only opaque secret reference, model list, and deletes secret', async () => {
+  const native = new Database(':memory:');
+  const database = initializeDatabase(native);
+  const secretValues = new Map();
+  const secretStore = {
+    async setSecret(id, value) { secretValues.set(id, value); },
+    async getSecret(id) { return secretValues.get(id) || null; },
+    async deleteSecret(id) { secretValues.delete(id); },
+  };
+  const service = createProviderAccountService({ database, secretStore, providerServices: {} });
+  const saved = await service.saveProvider({ label: 'Local API', baseUrl: 'https://api.example.test', format: 'openai', apiKey: 'private' });
+  expect(saved.secretRef).toBe(`provider:${saved.id}`);
+  expect(secretValues.get(saved.secretRef)).toBe('private');
+  expect(JSON.stringify(await service.listProviders())).not.toContain('private');
+  await service.setModels(saved.id, ['m1', 'm2', 'm1']);
+  expect((await service.listProviders())[0].models.map((model) => model.modelId)).toEqual(['m1', 'm2']);
+  await service.deleteProvider(saved.id);
+  expect(secretValues.size).toBe(0);
+  native.close();
+});
 
 test('normalizes quota, auth, rate-limit, server and network errors', () => {
   expect(normalizeProviderError({ status: 402 }).kind).toBe('QUOTA');
@@ -115,6 +139,7 @@ test('provider services report connection result and preserve manual model fallb
   const services = createProviderServices({ registry });
   expect(await services.testConnection({ providerId: 'p' })).toEqual({ ok: false, error: { kind: 'NETWORK', message: 'offline' } });
   expect(await services.fetchModels({ providerId: 'p' })).toEqual({ models: [], manualModelIdAllowed: true, error: { kind: 'NETWORK', message: 'offline' } });
+  expect(services.adapterFor({ providerId: 'p' })).toBe(registry.get('p'));
 });
 
 test('Anthropic adapter maps system prompt and SSE text deltas', async () => {

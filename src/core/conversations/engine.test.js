@@ -25,7 +25,22 @@ function setup() {
   return { engine, calls };
 }
 
-test('persists user then assistant streaming deltas and provider attribution', async () => {
+test('prepends stored conversation system prompt to provider request', async () => {
+  const repository = {
+    async appendMessage(_id, message) { return { id: `m-${message.role}` }; },
+    async getConversation() { return { id: 'c1', systemPrompt: 'Be concise', messages: [] }; },
+    async updateMessage() {},
+  };
+  const testEngine = createConversationEngine({ repository });
+  await testEngine.sendMessage('c1', { model: 'm', messages: [{ role: 'user', content: 'Hello' }] }, {
+    async *streamChat(request) {
+      expect(request.messages).toEqual([{ role: 'system', content: 'Be concise' }, { role: 'user', content: 'Hello' }]);
+      yield { type: 'done' };
+    },
+  }, { providerId: 'p' });
+});
+
+test('persists user then assistant streaming deltas and provider attribution after prior history', async () => {
   const { engine, calls } = setup();
   const request = { model: 'm2', messages: [{ role: 'user', content: 'new' }] };
   const adapter = { async *streamChat(received) {

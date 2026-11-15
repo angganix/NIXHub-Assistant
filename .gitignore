@@ -1,5 +1,10 @@
 node_modules/
 dist/
 .expo/
+.eas/
 .env*
 *.jks
+*.keystore
+*.p12
+*.mobileprovision
+credentials.json

@@ -3,8 +3,8 @@
     "name": "NIXHub Assistant",
     "slug": "nixhub-assistant",
     "version": "0.1.0",
-    "orientation": "portrait",
     "scheme": "nixhub",
+    "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -15,11 +15,22 @@
       "package": "id.nixhub.assistant",
       "adaptiveIcon": {
         "backgroundColor": "#18181b"
-      }
+      },
+      "edgeToEdgeEnabled": true
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-sqlite"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite"
+    ],
     "experiments": {
       "typedRoutes": false
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9ac3afad-6193-4f6c-8bb8-c873bfd741be"
+      }
     }
   }
 }

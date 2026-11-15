@@ -13,3 +13,6 @@ Task 6: pending.
 Task 7: pending.
 
 Task 1 observations: Expo SDK 54 + NativeWind v4. Root config and tabbed shell created; expo-doctor initially required aligned SDK deps and `react-native-worklets`. RNTL 13 has no `/extend-expect` module; obsolete import removed. `dist/`, `.expo/`, and `node_modules/` ignored. No APK build/device QR verification yet.
+Task 2: complete (commits 72ce882..97bbb1c, tests: npm test -- --runInBand --no-coverage → Ran all test suites.)
+Task 3: complete (commits 97bbb1c..8b9c60b, tests: npm test -- --runInBand --no-coverage → Ran all test suites.)
+Task 4: complete (commits 8b9c60b..637c599, tests: npm test -- --runInBand --no-coverage → Ran all test suites.)

@@ -5,13 +5,9 @@ import { ArrowUp, Plus, Search, Square, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../components/ui/screen';
 import { useLocale } from '../../core/i18n/locale-context';
 import { getConversationRuntime } from '../../core/conversations/runtime';
-import { secretStore } from '../../core/security/secrets';
-import { createProviderRegistry } from '../../core/providers/registry';
-import { createOpenAIAdapter } from '../../core/providers/custom/openai';
-import { createAnthropicAdapter } from '../../core/providers/custom/anthropic';
+import { getDefaultSystemPrompt } from '../onboarding/onboarding-state';
 
 const runtime = getConversationRuntime();
-const registry = createProviderRegistry();
 
 function MessageBubble({ item }) {
   const user = item.role === 'user';
@@ -51,7 +47,8 @@ export default function ChatScreen() {
   }, [conversationId, busy]);
 
   const newChat = async () => {
-    const created = await runtime.repository.createConversation({});
+    const systemPrompt = await getDefaultSystemPrompt();
+    const created = await runtime.repository.createConversation({ systemPrompt });
     router.push(`/chat/${created.id}`);
   };
 
@@ -61,15 +58,11 @@ export default function ChatScreen() {
     setDraft('');
     setBusy(true);
     try {
-      const accounts = await runtime.database.select().from((await import('../../core/storage/schema')).providerAccounts);
-      const account = accounts.find((item) => item.enabled);
+      const { listProviderAccounts, providerAccountService } = await import('../../core/providers/runtime');
+      const accounts = await listProviderAccounts();
+      const account = accounts.find((item) => item.enabled && item.models.length > 0);
       if (!account) throw new Error(t('chat.noProvider'));
-      const secretStoreRef = secretStore;
-      const adapter = account.format === 'anthropic'
-        ? createAnthropicAdapter({ secretStore: secretStoreRef })
-        : createOpenAIAdapter({ secretStore: secretStoreRef });
-      registry.register(account.providerId, adapter);
-      await runtime.engine.sendMessage(conversationId, { model: account.modelId || 'manual-model', messages: [{ role: 'user', content: text }] }, adapter, account);
+      await runtime.engine.sendMessage(conversationId, { model: account.models[0].modelId, messages: [{ role: 'user', content: text }] }, providerAccountService.adapterFor(account), account);
     } catch (error) {
       setConversation(await runtime.repository.getConversation(conversationId));
       if (!conversation) console.warn(error.message);
